@@ -1,24 +1,49 @@
 {
   "name": "m-cal",
-  "version": "1.0.0",
-  "description": "Milk Rate Calculator - Tech Intelligence",
-  "author": "Tech Intelligence <support@techintelligence.com>",
+  "version": "1.0.1",
+  "description": "Milk Rate Calculator Desktop App",
   "main": "main.js",
+  "author": "Tech Intelligence <support@techintelligence.in>",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --linux deb AppImage --publish never"
   },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
   "build": {
     "appId": "com.techintelligence.mcal",
     "productName": "M-Cal",
+    "icon": "icon.png",
+    "files": [
+      "**/*",
+      "icon.png"
+    ],
     "linux": {
-      "target": ["deb", "AppImage"],
+      "target": [
+        "deb",
+        "AppImage"
+      ],
       "icon": "icon.png",
-      "category": "Office"
+      "category": "Office",
+      "depends": [
+        "libasound2 | libasound2t64",
+        "libnss3",
+        "libatk1.0-0",
+        "libatk-bridge2.0-0",
+        "libcups2",
+        "libdrm2",
+        "libxkbcommon0",
+        "libxcomposite1",
+        "libxdamage1",
+        "libxfixes3",
+        "libxrandr2",
+        "libgbm1",
+        "libpango-1.0-0",
+        "libcairo2"
+      ]
     }
-  },
-  "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.0.0"
   }
 }
