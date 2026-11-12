@@ -2,6 +2,7 @@
   "name": "m-cal",
   "version": "1.0.0",
   "description": "Milk Rate Calculator - Tech Intelligence",
+  "author": "Tech Intelligence <support@techintelligence.com>",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
