@@ -27,7 +27,9 @@
         "AppImage"
       ],
       "icon": "icon.png",
-      "category": "Office",
+      "category": "Office"
+    },
+    "deb": {
       "depends": [
         "libasound2 | libasound2t64",
         "libnss3",
