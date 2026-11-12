@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milk Rate Calculator</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f1125; padding: 15px; margin: 0; }
+        .container { max-width: 380px; background: #588ea1; padding: 15px; border-radius: 12px; box-shadow: 0 6px 15px rgba(16, 217, 244, 0.7); margin: auto; border: 2px solid rgb(8, 109, 106); position: relative; }
+        
+        /* Header & Logout row */
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        h2 { color: #a6d2ff; font-size: 20px; margin: 0; }
+        .btn-logout { background: #991b1b; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-logout:hover { background: #7f1d1d; }
+
+        /* Compact Profile box */
+        .profile-box { background: #588ea1; padding: 6px; border-radius: 6px; margin-bottom: 15px; font-size: 12px; color: #33333330; text-align: center; }
+
+        /* Form styling for compact inputs */
+        .form-group, .result-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        label { flex: 1; font-weight: 600; color: #720000; font-size: 26px; }
+        
+        /* Smaller width inputs for max 3 digits */
+        input { width: 110px; padding: 8px; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 28px; background: #ffffff; color: #111; font-weight: bold; text-align: center; }
+        input:focus { border-color: #3498db; outline: none; background-color: #82c1ff; }
+        
+        .value-box { width: 110px; padding: 8px; display: flex; align-items: center; justify-content: center; background: #f0fdf4; border: 2px solid #bbf7d0; color: #166534; border-radius: 6px; font-size: 28px; font-weight: bold; }
+        .value-box-amount { width: 110px; padding: 8px; display: flex; align-items: center; justify-content: center; background: #f0fdf4; border: 2px solid #bbf7d0; color: #651616; border-radius: 6px; font-size: 28px; font-weight: bold; }
+       
+        button.btn-login { width: 100%; padding: 12px; background: #093a6a; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button.btn-login:hover { background: #062544; }
+
+        .error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px; border-radius: 6px; font-weight: 600; margin-top: 10px; font-size: 13px; text-align: center; display: block !important; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN (Default hidden taaki pehle check ho sake) -->
+<div class="container hidden" id="loginScreen">
+    <h2>User Login</h2>
+    <div class="form-group" style="flex-direction: column; align-items: stretch; margin-top: 15px;">
+        <label style="margin-bottom: 5px;">Mobile Number:</label>
+        <input type="tel" id="loginMobile" placeholder="Enter Mobile" maxlength="10" style="width: 100%; text-align: left; padding: 10px;">
+    </div>
+    <div class="form-group" style="flex-direction: column; align-items: stretch;">
+        <label style="margin-bottom: 5px;">Password:</label>
+        <input type="password" id="loginPassword" placeholder="Enter Password" style="width: 100%; text-align: left; padding: 10px;">
+    </div>
+    <button class="btn-login" id="loginBtn" onclick="loginUser()">Login</button>
+    <div id="loginError" class="error hidden"></div>
+</div>
+
+<!-- CALCULATOR SCREEN -->
+<div class="container hidden" id="calcScreen">
+    <div class="header-row">
+        <h2>Milk Calculator</h2>
+        <button class="btn-logout" onclick="logoutUser()">Logout</button>
+    </div>
+    
+    <div class="profile-box" id="profileInfo"></div>
+
+    <div class="form-group">
+        <label>Quantity:</label>
+        <input type="number" id="qty" value="1" inputmode="decimal">
+    </div>
+    
+    <div class="form-group">
+        <label>FAT (%):</label>
+        <input type="number" step="0.1" id="fat" placeholder="0.0" inputmode="decimal">
+    </div>
+    
+    <div class="form-group">
+        <label>SNF (%):</label>
+        <input type="number" step="0.1" id="snf" placeholder="0.0" inputmode="decimal">
+    </div>
+
+    <div class="result-row">
+        <label>Rate:</label>
+        <div class="value-box">₹<span id="resRate">0.00</span></div>
+    </div>
+
+    <div class="result-row">
+        <label>Amount:</label>
+        <div class="value-box-amount">₹<span id="resAmount">0.00</span></div>
+    </div>
+    
+    <div id="errorBox" class="error hidden"></div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDzmF9971PlauZ3uZdzMZZqH1OYwKD0Wpk",
+        authDomain: "m-cal-d649b.firebaseapp.com",
+        databaseURL: "https://m-cal-d649b-default-rtdb.firebaseio.com",
+        projectId: "m-cal-d649b",
+        storageBucket: "m-cal-d649b.firebasestorage.app",
+        messagingSenderId: "304163465048",
+        appId: "1:304163465048:web:1a38034cad20148c6be72d",
+        measurementId: "G-BTHLSLPHLK"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const LATEST_VERSION = "v2"; 
+    let currentUserData = { mode: 'authentic', version: 'v1', mobile: '' };
+
+    let deviceId = localStorage.getItem('device_unique_id');
+    if (!deviceId) {
+        deviceId = 'dev_' + Math.random().toString(36).substring(2) + Date.now();
+        localStorage.setItem('device_unique_id', deviceId);
+    }
+
+    // --- INSTANT OFFLINE CHECK ON LAUNCH ---
+    const localUser = localStorage.getItem('mcal_local_user');
+    if (localUser) {
+        currentUserData = JSON.parse(localUser);
+        updateProfileUI();
+        showCalculator();
+    } else {
+        showLogin();
+    }
+
+    // --- FIREBASE BACKGROUND AUTH/SYNC (Sirf jab internet available ho) ---
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            let mobileKey = user.email.split('@')[0];
+            db.ref('users/' + mobileKey).on('value', async (snapshot) => {
+                let data = snapshot.val();
+                if (!data) {
+                    showInPageLoginError("User account data not found.");
+                    logoutUser();
+                    return;
+                }
+                if (data.deviceId && data.deviceId !== deviceId) {
+                    showInPageLoginError("Active on another device! Contact Admin.");
+                    await auth.signOut();
+                    logoutUser();
+                    return;
+                }
+                if (!data.deviceId) {
+                    db.ref('users/' + mobileKey).update({ deviceId: deviceId });
+                }
+                
+                currentUserData = {
+                    calc_mode: data.calc_mode || 'authentic',
+                    version: data.version || 'v1',
+                    mobile: mobileKey
+                };
+                
+                // Cache update in storage
+                localStorage.setItem('mcal_local_user', JSON.stringify(currentUserData));
+                updateProfileUI();
+                if (document.getElementById('calcScreen').classList.contains('hidden')) {
+                    showCalculator();
+                }
+            });
+        } else {
+            if (!localStorage.getItem('mcal_local_user')) {
+                showLogin();
+            }
+        }
+    });
+
+    function showInPageLoginError(msg) {
+        let errBox = document.getElementById('loginError');
+        errBox.innerText = msg;
+        errBox.classList.remove('hidden');
+        let btn = document.getElementById('loginBtn');
+        if(btn) {
+            btn.innerText = "Login";
+            btn.disabled = false;
+        }
+    }
+
+    function loginUser() {
+        let mobile = document.getElementById('loginMobile').value.trim();
+        let pass = document.getElementById('loginPassword').value.trim();
+        let errBox = document.getElementById('loginError');
+        let btn = document.getElementById('loginBtn');
+        
+        errBox.classList.add('hidden');
+
+        if (mobile.length !== 10 || !pass) {
+            showInPageLoginError("Enter valid 10-digit mobile & password!");
+            return;
+        }
+
+        btn.innerText = "Logging in...";
+        btn.disabled = true;
+
+        let fakeEmail = mobile + "@milkapp.com";
+
+        auth.signInWithEmailAndPassword(fakeEmail, pass)
+            .then((userCredential) => {
+                let mobileKey = mobile;
+                db.ref('users/' + mobileKey).once('value').then((snapshot) => {
+                    let data = snapshot.val();
+                    if (data && data.deviceId && data.deviceId !== deviceId) {
+                        showInPageLoginError("Access Denied: Already active on another phone!");
+                        auth.signOut();
+                    } else {
+                        db.ref('users/' + mobileKey).update({ deviceId: deviceId });
+                        currentUserData = {
+                            calc_mode: (data && data.calc_mode) ? data.calc_mode : 'authentic',
+                            version: (data && data.version) ? data.version : 'v1',
+                            mobile: mobileKey
+                        };
+                        localStorage.setItem('mcal_local_user', JSON.stringify(currentUserData));
+                        updateProfileUI();
+                        showCalculator();
+                    }
+                });
+            })
+            .catch((error) => {
+                showInPageLoginError("Login Failed: " + error.message);
+            });
+    }
+
+    function logoutUser() {
+        localStorage.removeItem('mcal_local_user');
+        auth.signOut().then(() => showLogin());
+    }
+
+    function showLogin() {
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('calcScreen').classList.add('hidden');
+        let btn = document.getElementById('loginBtn');
+        if(btn) {
+            btn.innerText = "Login";
+            btn.disabled = false;
+        }
+    }
+
+    function showCalculator() {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('calcScreen').classList.remove('hidden');
+        document.getElementById('qty').focus();
+        document.getElementById('qty').select();
+    }
+
+    function updateProfileUI() {
+        let profileDiv = document.getElementById('profileInfo');
+        let mode = currentUserData.calc_mode || 'authentic';
+        let ver = currentUserData.version || 'v1';
+        let isLatest = ver === LATEST_VERSION;
+        profileDiv.innerHTML = `
+            Mode: <b>${mode.toUpperCase()}</b> | Version: <b>${ver}</b>
+            ${!isLatest ? '<br><span style="color:red;">⚠️ Update Available! Contact Admin.</span>' : ''}
+        `;
+    }
+
+    // Enter Key Navigation & Select All logic for inputs
+    const calcInputs = ['qty', 'fat', 'snf'];
+    calcInputs.forEach((id, index) => {
+        let inputEl = document.getElementById(id);
+        
+        inputEl.addEventListener('focus', function() {
+            this.select();
+        });
+
+        inputEl.addEventListener('input', function() {
+            calculateMilk();
+        });
+
+        inputEl.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                let nextIndex = (index + 1) % calcInputs.length;
+                let nextInput = document.getElementById(calcInputs[nextIndex]);
+                nextInput.focus();
+                nextInput.select();
+            }
+        });
+    });
+
+    function calculateMilk() {
+        let qty = parseFloat(document.getElementById('qty').value) || 0;
+        let fat = parseFloat(document.getElementById('fat').value) || 0;
+        let snf = parseFloat(document.getElementById('snf').value) || 0;
+        
+        let errorBox = document.getElementById('errorBox');
+        errorBox.classList.add('hidden');
+
+        if (fat === 0 || snf === 0) {
+            document.getElementById('resRate').innerText = "0.00";
+            document.getElementById('resAmount').innerText = "0.00";
+            return;
+        }
+
+        let mode = currentUserData.calc_mode || 'authentic';
+
+        let ratePerLitre = 0;
+
+        if (mode === 'authentic') {
+            if (fat >= 6.0 && snf >= 8.4) {
+                let baseSingleAxisRate = (fat * 843.33) / 100;
+                let snfDifference = 9.0 - snf;
+                if (snfDifference > 0) {
+                    let deductions = (snfDifference / 0.1) * 0.24;
+                    baseSingleAxisRate -= deductions;
+                }
+                ratePerLitre = baseSingleAxisRate;
+            } else {
+                let fatRate = (fat / 100) * 424.68;
+                let snfRate = (snf / 100) * 283.12;
+                ratePerLitre = fatRate + snfRate;
+            }
+        } 
+        else {
+            let fatRate = (fat / 100) * 424.68;
+            let snfRate = (snf / 100) * 283.12;
+            ratePerLitre = fatRate + snfRate;
+
+            if (mode === 'fine' && snf < 8.0) {
+                let snfShortage = 8.0 - snf;
+                let fineDeduction = (snfShortage / 0.1) * 0.50;
+                ratePerLitre -= fineDeduction;
+                if (ratePerLitre < 0) ratePerLitre = 0;
+            }
+        }
+
+        // Rate ko 2 decimal places me fix kar liya (jaise 34.44)
+        let finalRate = parseFloat(ratePerLitre.toFixed(2));
+        
+        // Ab rounded rate ke sath quantity multiply hogi
+        let totalAmount = finalRate * qty;
+
+        document.getElementById('resRate').innerText = finalRate.toFixed(2);
+        document.getElementById('resAmount').innerText = totalAmount.toFixed(2);
+    }
+</script>
+
+</body>
+</html>

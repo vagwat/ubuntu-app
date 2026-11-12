@@ -1,0 +1,23 @@
+{
+  "name": "m-cal",
+  "version": "1.0.0",
+  "description": "Milk Rate Calculator - Tech Intelligence",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --linux deb AppImage"
+  },
+  "build": {
+    "appId": "com.techintelligence.mcal",
+    "productName": "M-Cal",
+    "linux": {
+      "target": ["deb", "AppImage"],
+      "icon": "icon.png",
+      "category": "Office"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}
