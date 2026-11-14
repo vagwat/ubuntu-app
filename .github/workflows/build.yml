@@ -1,16 +1,16 @@
-name: Build Ubuntu App
+name: Build Installers (Linux & Windows)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -20,13 +20,34 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build Linux App
-        run: npm run build
+      - name: Build Linux (.deb)
+        run: npm run build:linux
 
-      - name: Upload Ubuntu Installers
+      - name: Upload Linux Installer
         uses: actions/upload-artifact@v4
         with:
-          name: M-Cal-Ubuntu-Software
-          path: |
-            dist/*.deb
-            dist/*.AppImage
+          name: M-Cal-Ubuntu-Installer
+          path: dist/*.deb
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Windows Setup (.exe)
+        run: npm run build:win
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: M-Cal-Windows-Installer
+          path: dist/*Setup*.exe
