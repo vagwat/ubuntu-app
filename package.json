@@ -6,7 +6,8 @@
   "author": "Tech Intelligence <support@techintelligence.in>",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --linux deb AppImage --publish never"
+    "build:linux": "electron-builder --linux deb --publish never",
+    "build:win": "electron-builder --win nsis --publish never"
   },
   "dependencies": {},
   "devDependencies": {
@@ -21,10 +22,21 @@
       "**/*",
       "icon.png"
     ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
     "linux": {
       "target": [
-        "deb",
-        "AppImage"
+        "deb"
       ],
       "icon": "icon.png",
       "category": "Office"
